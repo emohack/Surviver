@@ -12,6 +12,6 @@ class Detection:
 def banner():
     cprint('                          ', 'green', attrs=['bold', 'underline'])
     cprint('''
-    三思而行，再行而思''', 'green', attrs=['bold'])
+    三思而行，再行而思''', 'red', attrs=['bold'])
     cprint('                          ', 'green', attrs=['bold', 'underline'])
     print()

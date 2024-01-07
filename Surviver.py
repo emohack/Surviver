@@ -1,4 +1,5 @@
 import argparse,requests
+import multiprocessing
 import time
 
 import fake_useragent
@@ -47,10 +48,10 @@ class Surviver(object):
                 cprint("[-] Proxy Error!", "red")
                 exit(0)
 
-    def verify(self):
-        url=self.url+""
+    def verify(self,url):
+        url=url
         try:
-            rsp=requests.get(url,verify=False,timeout=5,allow_redirects=True,headers=self.headers,proxies=self.proxies)
+            rsp=requests.get(url,verify=False,timeout=3,allow_redirects=True,headers=self.headers,proxies=self.proxies)
             if not self.filter.run(rsp):
                 return
             # rsp = requests.post(url, verify=False, timeout=5, allow_redirects=False, headers=self.headers,proxies=self.proxies,data=self.data)
@@ -64,23 +65,32 @@ class Surviver(object):
 
 
     def run(self,url):
-        self.url = url
+        url = url
         if not url.startswith("http://") and not url.startswith("https://"):
-            self.url = "http://" + url
-        self.verify()
+            url = "http://" + url
+        self.verify(url)
+
 
     def Cout(self,rsp):
         self.o.Out(rsp)
 
+    #
+    def WirteFile(self):
+        self.o.WriteFile()
 
-
+def thread_work(file,options,poc):
+    with open(file) as ff:
+        with ThreadPoolExecutor(options.thread) as executor:
+            for line in ff:
+                executor.submit(poc.run, line.strip())
+    poc.WirteFile()
 
 
 if __name__ == '__main__':
     banner()
     args=argparse.ArgumentParser()
     args.add_argument('-f', '--file', help='Target File')
-    args.add_argument('-t', '--thread', help='Number of Thread,default is 10', default=15)
+    args.add_argument('-t', '--thread', help='Number of Thread,default is 10', default=20)
     args.add_argument('-p', '--proxy', help='Proxy (http/https/socks4/socks5)://127.0.0.1:1234)', default=None)
     args.add_argument('-d','--directory',help="the target files' directory",default=None)
 
@@ -109,16 +119,11 @@ if __name__ == '__main__':
     file = p.run(outdir)
 
     output=outdir+"/output.csv"
+    f=open(output,"w")
+    poc=Surviver(f,options.proxy)
+    thread_work(file,options,poc)
 
-    # 打开output文件
-    f = open(output, "w")
-
-    with open(file) as ff:
-        with ThreadPoolExecutor(options.thread) as executor:
-            poc = Surviver(proxy=options.proxy, file=f)
-            for line in ff:
-                executor.submit(poc.run, line.strip())
-
-
-if __name__ == '__main__':
-    pass
+    # 关闭文件
+    f.close()
+    print()
+    print("[+] Output file: "+output)
